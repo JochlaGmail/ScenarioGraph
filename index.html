@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entscheidungsbaum – Spielansicht</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0b08;
+    --surface: #171410;
+    --surface2: #1f1b16;
+    --border: #2e2820;
+    --gold: #c9a84c;
+    --gold-dim: #7d6630;
+    --cream: #e8dfc8;
+    --cream-dim: #9d9080;
+    --red: #8b2d2d;
+    --text: #d4c9b0;
+    --glow: rgba(201, 168, 76, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Text', serif;
+    font-size: 18px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 80% 80%, rgba(139,45,45,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13,11,8,0.9);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .nav-link {
+    font-size: 0.85rem;
+    color: var(--cream-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    padding: 6px 16px;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .nav-link:hover {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 760px;
+    padding: 60px 40px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .chapter-tag {
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .chapter-tag::before,
+  .chapter-tag::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 1px;
+    background: var(--gold-dim);
+  }
+
+  .scenario-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 48px 52px;
+    position: relative;
+    margin-bottom: 48px;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .scenario-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .scenario-card::after {
+    content: '"';
+    position: absolute;
+    top: 16px; left: 24px;
+    font-family: 'Playfair Display', serif;
+    font-size: 6rem;
+    line-height: 1;
+    color: var(--border);
+    pointer-events: none;
+  }
+
+  .scenario-text {
+    font-size: 1.25rem;
+    line-height: 1.9;
+    color: var(--cream);
+    font-style: italic;
+    position: relative;
+    z-index: 1;
+  }
+
+  .answers-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 20px;
+    align-self: flex-start;
+  }
+
+  .answers-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .answer-btn {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Crimson Text', serif;
+    font-size: 1.05rem;
+    padding: 18px 28px;
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.22s ease;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    opacity: 0;
+    transform: translateX(-12px);
+    line-height: 1.5;
+  }
+
+  .answer-btn.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .answer-num {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold-dim);
+    font-size: 0.85rem;
+    min-width: 24px;
+    padding-top: 2px;
+    transition: color 0.2s;
+  }
+
+  .answer-btn:hover {
+    background: var(--surface2);
+    border-color: var(--gold-dim);
+    color: var(--cream);
+    transform: translateX(4px);
+  }
+  .answer-btn:hover .answer-num {
+    color: var(--gold);
+  }
+
+  .answer-btn::after {
+    content: '→';
+    margin-left: auto;
+    opacity: 0;
+    color: var(--gold);
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .answer-btn:hover::after { opacity: 1; }
+
+  .no-answers {
+    width: 100%;
+    text-align: center;
+    padding: 32px;
+    border: 1px dashed var(--border);
+    color: var(--cream-dim);
+    font-style: italic;
+    font-size: 1.05rem;
+  }
+
+  .restart-btn {
+    margin-top: 24px;
+    background: none;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: 'Crimson Text', serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 28px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .restart-btn:hover {
+    background: var(--glow);
+    border-color: var(--gold);
+  }
+
+  .history-trail {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 32px;
+    opacity: 0.7;
+  }
+
+  .trail-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+    flex-shrink: 0;
+  }
+  .trail-dot.current {
+    background: var(--gold);
+    box-shadow: 0 0 6px var(--gold);
+  }
+
+  .error-msg {
+    width: 100%;
+    text-align: center;
+    padding: 60px 40px;
+    color: var(--cream-dim);
+    font-style: italic;
+  }
+  .error-msg strong {
+    color: var(--red);
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    font-style: normal;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    main { padding: 40px 20px 60px; }
+    .scenario-card { padding: 32px 28px; }
+    nav { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">Entscheidungsbaum</span>
+  <a href="editor.html" class="nav-link">✦ Graph-Editor</a>
+</nav>
+
+<main id="app">
+  <div class="error-msg"><strong>Lade…</strong></div>
+</main>
+
+<script>
+// Lädt den Graphen: zuerst vom Server-API, dann direkt als Datei, kein localStorage
+async function loadGraph() {
+  // 1. Versuch: lokaler Server (node server.js)
+  try {
+    const r = await fetch('/api/graph');
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.nodes) return { source: 'server', data };
+    }
+  } catch(e) { /* Server nicht erreichbar */ }
+
+  // 2. Versuch: graph.json direkt (z. B. über einen anderen Webserver)
+  try {
+    const r = await fetch('graph.json');
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.nodes) return { source: 'file', data };
+    }
+  } catch(e) { /* auch das nicht erreichbar */ }
+
+  return null;
+}
+
+let graph = null;
+let currentNodeId = null;
+let history = [];
+let graphSource = 'server'; // für Reload-Hinweis
+
+async function init() {
+  const result = await loadGraph();
+  if (!result) {
+    document.getElementById('app').innerHTML = `
+      <div class="error-msg">
+        <strong>Kein Graph gefunden</strong>
+        Starte den lokalen Server mit <code style="font-family:monospace;color:var(--gold)">node server.js</code>
+        und öffne <a href="http://localhost:3000" style="color:var(--gold)">http://localhost:3000</a>,
+        oder öffne den <a href="editor.html" style="color:var(--gold)">Graph-Editor</a>
+        und importiere eine graph.json.
+      </div>`;
+    return;
+  }
+  graph = result.data;
+  graphSource = result.source;
+  currentNodeId = graph.startNode;
+  history = [currentNodeId];
+  renderNode();
+}
+
+// Neu laden vom Server (nach Speichern im Editor)
+async function reloadGraph() {
+  const result = await loadGraph();
+  if (!result) return;
+  graph = result.data;
+  if (!graph.nodes[currentNodeId]) {
+    currentNodeId = graph.startNode;
+    history = [currentNodeId];
+  }
+  renderNode();
+}
+
+function getOutgoingEdges(nodeId) {
+  // Gibt [{key, edge}] zurück – key ist der verlässliche Lookup-Schlüssel
+  return Object.entries(graph.edges)
+    .filter(([key, e]) => e.from === nodeId)
+    .map(([key, e]) => ({ key, ...e }));
+}
+
+function renderNode() {
+  const node = graph.nodes[currentNodeId];
+  if (!node) {
+    document.getElementById('app').innerHTML = `<div class="error-msg"><strong>Knoten nicht gefunden.</strong></div>`;
+    return;
+  }
+  const outgoing = getOutgoingEdges(currentNodeId);
+  const isEnd = outgoing.length === 0;
+
+  // History dots
+  const dots = history.map((id, i) =>
+    `<div class="trail-dot ${i === history.length - 1 ? 'current' : ''}"></div>`
+  ).join('');
+
+  // Answers
+  let answersHTML = '';
+  if (isEnd) {
+    answersHTML = `
+      <div class="no-answers">Keine weiteren Antworten – du hast einen Endpunkt erreicht.</div>
+      <button class="restart-btn" onclick="restart()">↺ Von vorne beginnen</button>
+    `;
+  } else {
+    const btns = outgoing.map((edge, idx) => `
+      <button class="answer-btn" onclick="chooseEdge('${edge.key}')" style="transition-delay:${idx * 0.07}s">
+        <span class="answer-num">${idx + 1}.</span>
+        <span>${escHtml(edge.label)}</span>
+      </button>
+    `).join('');
+    answersHTML = `
+      <div class="answers-label">Deine Antwort</div>
+      <div class="answers-list">${btns}</div>
+    `;
+  }
+
+  document.getElementById('app').innerHTML = `
+    <div class="chapter-tag">Szenario</div>
+    <div class="history-trail">${dots}</div>
+    <div class="scenario-card">
+      <p class="scenario-text">${escHtml(node.label)}</p>
+    </div>
+    ${answersHTML}
+  `;
+
+  // Stagger in answer buttons
+  setTimeout(() => {
+    document.querySelectorAll('.answer-btn').forEach((btn, i) => {
+      setTimeout(() => btn.classList.add('visible'), i * 70);
+    });
+  }, 50);
+}
+
+function chooseEdge(edgeKey) {
+  const edge = graph.edges[edgeKey];
+  if (!edge) return;
+  currentNodeId = edge.to;
+  history.push(currentNodeId);
+  renderNode();
+}
+
+function restart() {
+  currentNodeId = graph.startNode;
+  history = [currentNodeId];
+  renderNode();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auf BroadcastChannel horchen (Editor sendet nach Speichern)
+try {
+  const bc = new BroadcastChannel('graph_updated');
+  bc.onmessage = () => reloadGraph();
+} catch(e) {
+  // Fallback: alle 3s pollen, ob sich die Datei geändert hat (nur wenn Server läuft)
+  let lastCheck = Date.now();
+  setInterval(async () => {
+    try {
+      const r = await fetch('/api/graph?t=' + Date.now());
+      if (r.ok) {
+        const data = await r.json();
+        // Einfacher Vergleich: JSON-String
+        if (JSON.stringify(data) !== JSON.stringify(graph)) {
+          graph = data;
+          if (!graph.nodes[currentNodeId]) {
+            currentNodeId = graph.startNode;
+            history = [currentNodeId];
+          }
+          renderNode();
+        }
+      }
+    } catch(e) {}
+  }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>

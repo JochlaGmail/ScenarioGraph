@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph-Editor – Entscheidungsbaum</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0b08;
+    --surface: #171410;
+    --surface2: #1f1b16;
+    --surface3: #252017;
+    --border: #2e2820;
+    --border2: #3d3428;
+    --gold: #c9a84c;
+    --gold-dim: #7d6630;
+    --gold-bg: rgba(201,168,76,0.08);
+    --cream: #e8dfc8;
+    --cream-dim: #9d9080;
+    --red: #8b2d2d;
+    --red-dim: #5a1d1d;
+    --green: #2d6b3c;
+    --green-bright: #4caf6e;
+    --text: #d4c9b0;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Text', serif;
+    font-size: 16px;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 56px 1fr;
+    grid-template-columns: 320px 1fr;
+    overflow: hidden;
+  }
+
+  /* NAV */
+  nav {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    z-index: 200;
+    gap: 16px;
+  }
+  .nav-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: 'Crimson Text', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    padding: 6px 16px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.18s;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .btn-gold {
+    background: var(--gold);
+    color: #0d0b08;
+    border: none;
+    font-weight: 600;
+  }
+  .btn-gold:hover { background: #e0be6a; }
+  .btn-outline {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--cream-dim);
+  }
+  .btn-outline:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .btn-danger {
+    background: none;
+    border: 1px solid var(--red-dim);
+    color: #d06060;
+  }
+  .btn-danger:hover { background: var(--red-dim); color: var(--cream); }
+
+  .nav-link {
+    font-size: 0.82rem;
+    color: var(--cream-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+  #save-status {
+    font-size: 0.78rem;
+    color: var(--cream-dim);
+    letter-spacing: 0.06em;
+  }
+  #save-status.saved { color: var(--green-bright); }
+
+  /* SIDEBAR */
+  #sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 100;
+  }
+
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--cream-dim);
+    font-family: 'Crimson Text', serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: var(--gold-bg);
+  }
+  .tab-btn:hover:not(.active) { color: var(--cream); }
+
+  .tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  .panel-header {
+    padding: 14px 16px 10px;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .list-container {
+    overflow-y: auto;
+    flex: 1;
+  }
+  .list-container::-webkit-scrollbar { width: 4px; }
+  .list-container::-webkit-scrollbar-track { background: transparent; }
+  .list-container::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  .list-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    position: relative;
+  }
+  .list-item:hover { background: var(--surface2); }
+  .list-item.selected { background: var(--gold-bg); }
+  .list-item.start-node .item-label::after {
+    content: ' ★';
+    color: var(--gold);
+    font-size: 0.7rem;
+  }
+
+  .item-id {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--gold-dim);
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+  .item-label {
+    font-size: 0.9rem;
+    color: var(--cream);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .item-sub {
+    font-size: 0.78rem;
+    color: var(--cream-dim);
+    margin-top: 2px;
+  }
+
+  .add-btn {
+    margin: 12px 16px;
+    width: calc(100% - 32px);
+    padding: 9px;
+    background: none;
+    border: 1px dashed var(--border2);
+    color: var(--gold-dim);
+    font-family: 'Crimson Text', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.18s;
+    flex-shrink: 0;
+  }
+  .add-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-bg); }
+
+  /* DETAIL PANEL */
+  #detail-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    left: 320px;
+    top: 56px;
+    bottom: 0;
+    width: 300px;
+    z-index: 150;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  #detail-panel.open { display: flex; }
+
+  .detail-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .detail-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+  }
+  .close-btn {
+    background: none;
+    border: none;
+    color: var(--cream-dim);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 2px 6px;
+    transition: color 0.15s;
+  }
+  .close-btn:hover { color: var(--cream); }
+
+  .detail-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+  .field-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--cream);
+    font-family: 'Crimson Text', serif;
+    font-size: 1rem;
+    padding: 9px 12px;
+    border-radius: 2px;
+    width: 100%;
+    resize: vertical;
+    transition: border-color 0.18s;
+  }
+  .field-input:focus { outline: none; border-color: var(--gold-dim); }
+  textarea.field-input { min-height: 100px; line-height: 1.5; }
+
+  select.field-input {
+    cursor: pointer;
+  }
+
+  .detail-actions {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* CANVAS */
+  #canvas-wrap {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  #canvas-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #canvas {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 1;
+    cursor: grab;
+  }
+  #canvas.dragging { cursor: grabbing; }
+
+  .canvas-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--cream-dim);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+  }
+  .zoom-btn {
+    width: 32px; height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--cream-dim);
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .zoom-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  /* MODAL */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    max-width: 480px;
+    width: 90%;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  #modal h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 1.2rem;
+  }
+  #modal p { color: var(--cream-dim); line-height: 1.6; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">✦ Graph-Editor</span>
+  <div class="nav-actions">
+    <span id="save-status">Bereit</span>
+    <button class="btn btn-outline" onclick="exportJSON()">JSON exportieren</button>
+    <button class="btn btn-outline" onclick="importJSON()">JSON importieren</button>
+    <button class="btn btn-gold" onclick="saveGraph()">Speichern</button>
+    <a href="index.html" class="nav-link">Spielansicht</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-tabs">
+    <button class="tab-btn active" onclick="switchTab('nodes')">Szenarien</button>
+    <button class="tab-btn" onclick="switchTab('edges')">Antworten</button>
+    <button class="tab-btn" onclick="switchTab('settings')">Graph</button>
+  </div>
+
+  <!-- Nodes -->
+  <div class="tab-panel active" id="tab-nodes">
+    <div class="panel-header">
+      <span>Alle Szenarien (Knoten)</span>
+      <span id="node-count" style="color:var(--cream-dim)">0</span>
+    </div>
+    <div class="list-container" id="node-list"></div>
+    <button class="add-btn" onclick="addNode()">+ Neues Szenario</button>
+  </div>
+
+  <!-- Edges -->
+  <div class="tab-panel" id="tab-edges">
+    <div class="panel-header">
+      <span>Alle Antworten (Kanten)</span>
+      <span id="edge-count" style="color:var(--cream-dim)">0</span>
+    </div>
+    <div class="list-container" id="edge-list"></div>
+    <button class="add-btn" onclick="addEdge()">+ Neue Antwort</button>
+  </div>
+
+  <!-- Settings -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="panel-header">Graph-Einstellungen</div>
+    <div class="detail-body">
+      <div class="field-group">
+        <label class="field-label">Startknoten (Startszenario)</label>
+        <select class="field-input" id="start-node-select" onchange="setStartNode(this.value)"></select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">JSON-Vorschau</label>
+        <textarea class="field-input" id="json-preview" readonly style="min-height:200px;font-family:var(--mono);font-size:0.7rem;color:var(--cream-dim);"></textarea>
+      </div>
+      <button class="btn btn-danger" onclick="confirmClear()">Graph leeren</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div id="canvas-wrap">
+  <svg id="canvas"></svg>
+  <div class="canvas-hint">Scrollen = Zoom · Ziehen = Verschieben · Knoten anklicken = Bearbeiten</div>
+  <div class="zoom-controls">
+    <button class="zoom-btn" onclick="zoom(1.2)">+</button>
+    <button class="zoom-btn" onclick="zoom(0.8)">−</button>
+    <button class="zoom-btn" onclick="resetView()" title="Reset">⌂</button>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="detail-panel">
+  <div class="detail-header">
+    <span class="detail-title" id="detail-title">Bearbeiten</span>
+    <button class="close-btn" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+  <div class="detail-actions" id="detail-actions"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title"></h2>
+    <p id="modal-msg"></p>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let graph = { startNode: '', nodes: {}, edges: {} };
+
+// Canvas transform
+let tx = 0, ty = 0, scale = 1;
+let isDragging = false, lastMx = 0, lastMy = 0;
+let nodePositions = {}; // {id: {x,y}}
+let draggingNode = null, dragOffX = 0, dragOffY = 0;
+
+let selectedId = null;
+let selectedType = null; // 'node' | 'edge'
+
+// BroadcastChannel zum Benachrichtigen der Spielansicht
+let _bc = null;
+try { _bc = new BroadcastChannel('graph_updated'); } catch(e) {}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+async function init() {
+  // 1. Versuch: Server-API (wenn node server.js läuft)
+  try {
+    const r = await fetch('/api/graph');
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.nodes) { graph = data; }
+    }
+  } catch(e) {
+    // 2. Versuch: graph.json direkt (anderer Webserver)
+    try {
+      const r = await fetch('graph.json');
+      if (r.ok) {
+        const data = await r.json();
+        if (data && data.nodes) graph = data;
+      }
+    } catch(e2) { /* Kein Server – leerer Graph */ }
+  }
+
+  layoutNodes();
+  render();
+  resetView();
+}
+
+function layoutNodes() {
+  const nodes = Object.keys(graph.nodes);
+  nodes.forEach((id, i) => {
+    if (!nodePositions[id]) {
+      nodePositions[id] = {
+        x: 120 + (i % 4) * 220,
+        y: 80 + Math.floor(i / 4) * 180
+      };
+    }
+  });
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  renderSidebar();
+  renderCanvas();
+  updateJsonPreview();
+  updateStartNodeSelect();
+}
+
+function renderSidebar() {
+  const nodes = Object.values(graph.nodes);
+  const edges = Object.values(graph.edges);
+
+  document.getElementById('node-count').textContent = nodes.length;
+  document.getElementById('edge-count').textContent = edges.length;
+
+  // Node list
+  document.getElementById('node-list').innerHTML = nodes.map(n => `
+    <div class="list-item ${n.id === graph.startNode ? 'start-node' : ''} ${selectedId === n.id && selectedType === 'node' ? 'selected' : ''}"
+         onclick="selectNode('${n.id}')">
+      <span class="item-id">${n.id.slice(-4)}</span>
+      <span class="item-label">${escHtml(truncate(n.label, 60))}</span>
+    </div>
+  `).join('') || '<div style="padding:16px;color:var(--cream-dim);font-style:italic;font-size:0.9rem;">Keine Szenarien vorhanden.</div>';
+
+  // Edge list
+  document.getElementById('edge-list').innerHTML = edges.map(e => {
+    const fromNode = graph.nodes[e.from];
+    const toNode = graph.nodes[e.to];
+    return `
+      <div class="list-item ${selectedId === e.id && selectedType === 'edge' ? 'selected' : ''}"
+           onclick="selectEdge('${e.id}')">
+        <span class="item-id">→</span>
+        <div>
+          <div class="item-label">${escHtml(truncate(e.label, 50))}</div>
+          <div class="item-sub">${escHtml(truncate(fromNode?.label||e.from,30))} → ${escHtml(truncate(toNode?.label||e.to,30))}</div>
+        </div>
+      </div>
+    `;
+  }).join('') || '<div style="padding:16px;color:var(--cream-dim);font-style:italic;font-size:0.9rem;">Keine Antworten vorhanden.</div>';
+}
+
+// ─── CANVAS ──────────────────────────────────────────────────────────────────
+function renderCanvas() {
+  const svg = document.getElementById('canvas');
+  const wrap = document.getElementById('canvas-wrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const nodes = Object.values(graph.nodes);
+  const edges = Object.values(graph.edges);
+
+  // Ensure positions
+  nodes.forEach(n => {
+    if (!nodePositions[n.id]) nodePositions[n.id] = { x: 200, y: 200 };
+  });
+
+  const defs = `
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="8" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#7d6630"/>
+      </marker>
+      <marker id="arrow-sel" markerWidth="8" markerHeight="8" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#c9a84c"/>
+      </marker>
+    </defs>
+  `;
+
+  const NODE_W = 180, NODE_H = 70;
+
+  // Edges
+  const edgeSVG = edges.map(e => {
+    const fp = nodePositions[e.from];
+    const tp = nodePositions[e.to];
+    if (!fp || !tp) return '';
+    const isSel = selectedId === e.id && selectedType === 'edge';
+    const col = isSel ? '#c9a84c' : '#3d3428';
+    const x1 = fp.x + NODE_W/2, y1 = fp.y + NODE_H/2;
+    const x2 = tp.x + NODE_W/2, y2 = tp.y + NODE_H/2;
+    // Offset for arrow end to not overlap node
+    const dx = x2 - x1, dy = y2 - y1;
+    const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+    const ex = x2 - dx/dist * (NODE_W/2 + 6);
+    const ey = y2 - dy/dist * (NODE_H/2 + 6);
+    // Curve
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    const cx = mx - dy*0.18, cy = my + dx*0.18;
+    const midLabelX = (x1 + cx*2 + ex)/4;
+    const midLabelY = (y1 + cy*2 + ey)/4;
+    const truncLabel = truncate(e.label, 28);
+    return `
+      <g onclick="selectEdge('${e.id}')" style="cursor:pointer">
+        <path d="M${x1},${y1} Q${cx},${cy} ${ex},${ey}"
+          fill="none" stroke="${col}" stroke-width="${isSel?2:1.5}"
+          marker-end="url(#${isSel?'arrow-sel':'arrow'})"/>
+        <text x="${midLabelX}" y="${midLabelY}" text-anchor="middle"
+          font-family="Crimson Text,serif" font-size="11" fill="${isSel?'#c9a84c':'#7d6630'}"
+          style="pointer-events:none">${escHtml(truncLabel)}</text>
+      </g>
+    `;
+  }).join('');
+
+  // Nodes
+  const nodeSVG = nodes.map(n => {
+    const p = nodePositions[n.id];
+    const isSel = selectedId === n.id && selectedType === 'node';
+    const isStart = n.id === graph.startNode;
+    const stroke = isSel ? '#c9a84c' : isStart ? '#7d6630' : '#2e2820';
+    const sw = isSel ? 2 : isStart ? 1.5 : 1;
+    const bg = isSel ? '#1f1b16' : '#171410';
+    const lines = wrapText(n.label, 22);
+    const labelSVG = lines.slice(0, 2).map((line, i) =>
+      `<text x="${p.x + NODE_W/2}" y="${p.y + 28 + i*16}"
+        text-anchor="middle" font-family="Crimson Text,serif" font-size="11.5"
+        fill="#d4c9b0" font-style="italic"
+        style="pointer-events:none">${escHtml(line)}${i===1&&lines.length>2?'…':''}</text>`
+    ).join('');
+    const startBadge = isStart ? `<text x="${p.x+NODE_W-6}" y="${p.y+14}" text-anchor="end" font-size="10" fill="#c9a84c" style="pointer-events:none">★ Start</text>` : '';
+    return `
+      <g onclick="selectNode('${n.id}')"
+         data-node="${n.id}"
+         style="cursor:pointer"
+         class="node-group">
+        <rect x="${p.x}" y="${p.y}" width="${NODE_W}" height="${NODE_H}"
+          fill="${bg}" stroke="${stroke}" stroke-width="${sw}" rx="2"/>
+        ${startBadge}
+        ${labelSVG}
+        <text x="${p.x+6}" y="${p.y+NODE_H-8}"
+          font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3428"
+          style="pointer-events:none">${n.id.slice(-6)}</text>
+        <rect x="${p.x}" y="${p.y}" width="${NODE_W}" height="${NODE_H}"
+          fill="transparent" rx="2"
+          onmousedown="startNodeDrag(event,'${n.id}')"/>
+      </g>
+    `;
+  }).join('');
+
+  // Apply transform
+  svg.innerHTML = defs + `<g transform="translate(${tx},${ty}) scale(${scale})">${edgeSVG}${nodeSVG}</g>`;
+}
+
+// ─── CANVAS INTERACTION ──────────────────────────────────────────────────────
+const canvasWrap = () => document.getElementById('canvas-wrap');
+
+window.addEventListener('resize', () => renderCanvas());
+
+document.addEventListener('DOMContentLoaded', () => {
+  const wrap = document.getElementById('canvas-wrap');
+
+  wrap.addEventListener('mousedown', e => {
+    if (draggingNode) return;
+    if (e.target.closest('.node-group')) return;
+    isDragging = true;
+    lastMx = e.clientX;
+    lastMy = e.clientY;
+    document.getElementById('canvas').classList.add('dragging');
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (draggingNode) {
+      const p = svgPoint(e.clientX, e.clientY);
+      nodePositions[draggingNode] = { x: p.x - dragOffX, y: p.y - dragOffY };
+      renderCanvas();
+      return;
+    }
+    if (!isDragging) return;
+    tx += e.clientX - lastMx;
+    ty += e.clientY - lastMy;
+    lastMx = e.clientX;
+    lastMy = e.clientY;
+    renderCanvas();
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    draggingNode = null;
+    document.getElementById('canvas').classList.remove('dragging');
+  });
+
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    const rect = wrap.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    tx = mx - factor * (mx - tx);
+    ty = my - factor * (my - ty);
+    scale *= factor;
+    renderCanvas();
+  }, { passive: false });
+});
+
+function startNodeDrag(e, nodeId) {
+  e.stopPropagation();
+  draggingNode = nodeId;
+  const p = svgPoint(e.clientX, e.clientY);
+  dragOffX = p.x - nodePositions[nodeId].x;
+  dragOffY = p.y - nodePositions[nodeId].y;
+}
+
+function svgPoint(cx, cy) {
+  const wrap = document.getElementById('canvas-wrap');
+  const rect = wrap.getBoundingClientRect();
+  return {
+    x: (cx - rect.left - tx) / scale,
+    y: (cy - rect.top  - ty) / scale
+  };
+}
+
+function zoom(factor) {
+  const wrap = document.getElementById('canvas-wrap');
+  const cx = wrap.clientWidth / 2, cy = wrap.clientHeight / 2;
+  tx = cx - factor * (cx - tx);
+  ty = cy - factor * (cy - ty);
+  scale *= factor;
+  renderCanvas();
+}
+
+function resetView() {
+  tx = 60; ty = 60; scale = 1;
+  renderCanvas();
+}
+
+// ─── SELECT / DETAIL ─────────────────────────────────────────────────────────
+function selectNode(id) {
+  selectedId = id;
+  selectedType = 'node';
+  openNodeDetail(id);
+  render();
+}
+
+function selectEdge(id) {
+  selectedId = id;
+  selectedType = 'edge';
+  openEdgeDetail(id);
+  render();
+}
+
+function closeDetail() {
+  selectedId = null;
+  selectedType = null;
+  document.getElementById('detail-panel').classList.remove('open');
+  render();
+}
+
+function openNodeDetail(id) {
+  const node = graph.nodes[id];
+  if (!node) return;
+  document.getElementById('detail-title').textContent = 'Szenario bearbeiten';
+  document.getElementById('detail-body').innerHTML = `
+    <div class="field-group">
+      <label class="field-label">ID</label>
+      <input class="field-input" value="${escHtml(node.id)}" readonly style="font-family:var(--mono);font-size:0.8rem;color:var(--cream-dim)">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Frage / Szenario-Text</label>
+      <textarea class="field-input" id="node-label" rows="5">${escHtml(node.label)}</textarea>
+    </div>
+  `;
+  document.getElementById('detail-actions').innerHTML = `
+    <button class="btn btn-danger" onclick="deleteNode('${id}')">Löschen</button>
+    <button class="btn btn-outline" onclick="setAsStart('${id}')">Als Start</button>
+    <button class="btn btn-gold" onclick="saveNodeDetail('${id}')">Speichern</button>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function openEdgeDetail(id) {
+  const edge = graph.edges[id];
+  if (!edge) return;
+  const nodeOptions = Object.values(graph.nodes).map(n =>
+    `<option value="${n.id}" ${n.id===edge.from?'selected':''}>${escHtml(truncate(n.label,40))} (${n.id.slice(-6)})</option>`
+  ).join('');
+  const nodeOptions2 = Object.values(graph.nodes).map(n =>
+    `<option value="${n.id}" ${n.id===edge.to?'selected':''}>${escHtml(truncate(n.label,40))} (${n.id.slice(-6)})</option>`
+  ).join('');
+  document.getElementById('detail-title').textContent = 'Antwort bearbeiten';
+  document.getElementById('detail-body').innerHTML = `
+    <div class="field-group">
+      <label class="field-label">Antworttext (Kanten-Label)</label>
+      <textarea class="field-input" id="edge-label" rows="4">${escHtml(edge.label)}</textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Von Szenario</label>
+      <select class="field-input" id="edge-from">${nodeOptions}</select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Zu Szenario</label>
+      <select class="field-input" id="edge-to">${nodeOptions2}</select>
+    </div>
+  `;
+  document.getElementById('detail-actions').innerHTML = `
+    <button class="btn btn-danger" onclick="deleteEdge('${id}')">Löschen</button>
+    <button class="btn btn-gold" onclick="saveEdgeDetail('${id}')">Speichern</button>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function saveNodeDetail(id) {
+  graph.nodes[id].label = document.getElementById('node-label').value.trim() || 'Unbenanntes Szenario';
+  markDirty();
+  render();
+}
+
+function saveEdgeDetail(id) {
+  graph.edges[id].label = document.getElementById('edge-label').value.trim() || 'Antwort';
+  graph.edges[id].from = document.getElementById('edge-from').value;
+  graph.edges[id].to = document.getElementById('edge-to').value;
+  markDirty();
+  render();
+}
+
+function setAsStart(id) {
+  graph.startNode = id;
+  markDirty();
+  render();
+  setSaveStatus('Startknoten gesetzt');
+}
+
+// ─── ADD / DELETE ─────────────────────────────────────────────────────────────
+function addNode() {
+  const id = 'node_' + Date.now();
+  graph.nodes[id] = { id, label: 'Neues Szenario – bitte beschreiben' };
+  const wrap = document.getElementById('canvas-wrap');
+  nodePositions[id] = {
+    x: Math.random() * (wrap.clientWidth/scale - 200) + 80,
+    y: Math.random() * (wrap.clientHeight/scale - 120) + 80
+  };
+  if (!graph.startNode) graph.startNode = id;
+  markDirty();
+  render();
+  switchTab('nodes');
+  setTimeout(() => selectNode(id), 50);
+}
+
+function addEdge() {
+  const nodeIds = Object.keys(graph.nodes);
+  if (nodeIds.length < 2) { alert('Mindestens 2 Szenarien nötig, um eine Antwort zu erstellen.'); return; }
+  const id = 'edge_' + Date.now();
+  graph.edges[id] = { id, from: nodeIds[0], to: nodeIds[1], label: 'Neue Antwort' };
+  markDirty();
+  render();
+  switchTab('edges');
+  setTimeout(() => selectEdge(id), 50);
+}
+
+function deleteNode(id) {
+  showModal(
+    'Szenario löschen?',
+    'Alle eingehenden und ausgehenden Antworten dieses Szenarios werden ebenfalls gelöscht.',
+    [
+      { label: 'Abbrechen', cls: 'btn-outline', action: closeModal },
+      { label: 'Löschen', cls: 'btn-danger', action: () => {
+        delete graph.nodes[id];
+        Object.keys(graph.edges).forEach(eid => {
+          if (graph.edges[eid].from === id || graph.edges[eid].to === id)
+            delete graph.edges[eid];
+        });
+        if (graph.startNode === id) graph.startNode = Object.keys(graph.nodes)[0] || '';
+        delete nodePositions[id];
+        closeModal();
+        closeDetail();
+        markDirty();
+        render();
+      }}
+    ]
+  );
+}
+
+function deleteEdge(id) {
+  delete graph.edges[id];
+  closeDetail();
+  markDirty();
+  render();
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function updateStartNodeSelect() {
+  const sel = document.getElementById('start-node-select');
+  if (!sel) return;
+  sel.innerHTML = Object.values(graph.nodes).map(n =>
+    `<option value="${n.id}" ${n.id===graph.startNode?'selected':''}>${escHtml(truncate(n.label,50))} (${n.id.slice(-6)})</option>`
+  ).join('');
+}
+
+function setStartNode(id) {
+  graph.startNode = id;
+  markDirty();
+  renderCanvas();
+}
+
+function updateJsonPreview() {
+  const el = document.getElementById('json-preview');
+  if (el) el.value = JSON.stringify(graph, null, 2);
+}
+
+function confirmClear() {
+  showModal('Graph leeren?', 'Alle Szenarien und Antworten werden unwiderruflich gelöscht.', [
+    { label: 'Abbrechen', cls: 'btn-outline', action: closeModal },
+    { label: 'Alles löschen', cls: 'btn-danger', action: () => {
+      graph = { startNode: '', nodes: {}, edges: {} };
+      nodePositions = {};
+      closeModal();
+      closeDetail();
+      markDirty();
+      render();
+    }}
+  ]);
+}
+
+// ─── SAVE / EXPORT / IMPORT ───────────────────────────────────────────────────
+let dirty = false;
+function markDirty() { dirty = true; setSaveStatus('Ungespeicherte Änderungen'); }
+
+function setSaveStatus(msg, saved = false) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = saved ? 'saved' : '';
+}
+
+async function saveGraph() {
+  setSaveStatus('Speichert…');
+  let savedToServer = false;
+
+  // Versuch: per API auf Server schreiben (überschreibt graph.json)
+  try {
+    const r = await fetch('/api/graph', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(graph, null, 2)
+    });
+    if (r.ok) savedToServer = true;
+  } catch(e) { /* Server nicht erreichbar */ }
+
+  dirty = false;
+
+  if (savedToServer) {
+    setSaveStatus('In graph.json gespeichert ✓', true);
+    // Spielansicht im selben Browser benachrichtigen
+    if (_bc) _bc.postMessage('updated');
+  } else {
+    // Kein Server – nur Download anbieten
+    setSaveStatus('Kein Server – bitte exportieren!', false);
+    showModal(
+      'Server nicht erreichbar',
+      'Die Datei graph.json konnte nicht automatisch gespeichert werden. Starte "node server.js" für automatisches Speichern, oder exportiere die Datei manuell.',
+      [
+        { label: 'JSON exportieren', cls: 'btn-gold', action: () => { exportJSON(); closeModal(); } },
+        { label: 'Schließen', cls: 'btn-outline', action: closeModal }
+      ]
+    );
+  }
+  setTimeout(() => setSaveStatus('Bereit'), 3000);
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(graph, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'graph.json';
+  a.click();
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        graph = JSON.parse(ev.target.result);
+        nodePositions = {};
+        layoutNodes();
+        markDirty();
+        render();
+        resetView();
+      } catch(err) { alert('Ungültige JSON-Datei.'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['nodes','edges','settings'][i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach((p, i) => {
+    p.classList.toggle('active', ['tab-nodes','tab-edges','tab-settings'][i] === 'tab-'+name);
+  });
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function showModal(title, msg, btns) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-actions').innerHTML = btns.map(b =>
+    `<button class="btn ${b.cls}" id="mbtn_${b.label}">${b.label}</button>`
+  ).join('');
+  btns.forEach(b => {
+    document.getElementById('mbtn_'+b.label).onclick = b.action;
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function truncate(str, n) { return str && str.length > n ? str.slice(0,n-1)+'…' : (str||''); }
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function wrapText(str, maxChars) {
+  const words = str.split(' ');
+  const lines = [];
+  let cur = '';
+  words.forEach(w => {
+    if ((cur+' '+w).trim().length > maxChars) { lines.push(cur.trim()); cur = w; }
+    else cur = (cur+' '+w).trim();
+  });
+  if (cur) lines.push(cur.trim());
+  return lines;
+}
+
+function uid() { return 'n_' + Math.random().toString(36).slice(2,8); }
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDetail();
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveGraph(); }
+});
+
+init();
+</script>
+</body>
+</html>

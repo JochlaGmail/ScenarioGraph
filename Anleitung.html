@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Anleitung – Entscheidungsbaum</title>
+<style>
+  body {
+    font-family: Segoe UI, Arial, sans-serif;
+    font-size: 15px;
+    max-width: 760px;
+    margin: 40px auto;
+    padding: 0 24px 60px;
+    color: #1a1a1a;
+    background: #fafaf8;
+    line-height: 1.7;
+  }
+  h1 { font-size: 1.9rem; color: #2c2c2c; margin-bottom: 4px; }
+  h2 { font-size: 1.15rem; color: #2c2c2c; margin-top: 36px; border-bottom: 2px solid #e0ddd7; padding-bottom: 6px; }
+  p { margin: 10px 0; }
+  ul { margin: 8px 0 8px 20px; }
+  li { margin: 5px 0; }
+  code, .cmd {
+    font-family: Consolas, monospace;
+    background: #efefec;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 0.93em;
+  }
+  .box {
+    border-left: 4px solid #b8a060;
+    background: #fdf8ee;
+    padding: 14px 18px;
+    margin: 18px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .box.info { border-color: #5a8fc2; background: #eef5fd; }
+  .box.warn { border-color: #c25a5a; background: #fdeee e; }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin: 14px 0;
+  }
+  .step-num {
+    background: #b8a060;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 50%;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th { background: #eeecea; text-align: left; padding: 8px 12px; font-size: 0.85rem; letter-spacing: 0.04em; }
+  td { padding: 8px 12px; border-top: 1px solid #e5e2dc; }
+  a { color: #5a8fc2; }
+  .tag {
+    display: inline-block;
+    background: #e8e4dc;
+    border-radius: 3px;
+    padding: 1px 8px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>✦ Entscheidungsbaum</h1>
+<p style="color:#666;margin-top:0;">Anleitung für Windows &mdash; einfach im Browser öffnen</p>
+
+<h2>Was ist das?</h2>
+<p>
+  Diese Anwendung erlaubt es dir, interaktive Entscheidungsbäume zu erstellen und zu spielen.
+  Du arbeitest mit <strong>Szenarien</strong> (Knoten) und <strong>Antworten</strong> (Kanten),
+  die zusammen einen gerichteten Graphen bilden.
+</p>
+<ul>
+  <li><strong>Spielansicht</strong> &ndash; zeigt ein Szenario und lässt dich eine Antwort wählen, die dich zum nächsten Szenario führt.</li>
+  <li><strong>Graph-Editor</strong> &ndash; hier kannst du Szenarien und Antworten erstellen, bearbeiten und verbinden.</li>
+  <li><strong>graph.json</strong> &ndash; die Datei, in der alles gespeichert wird. Sie wird beim Speichern automatisch überschrieben.</li>
+</ul>
+
+<h2>Was du einmalig installieren musst</h2>
+<div class="box">
+  <strong>Node.js</strong> ist ein kleines Programm, das den lokalen Webserver startet.
+  Es ist kostenlos, sicher und weit verbreitet.<br><br>
+  <strong>Download:</strong> <a href="https://nodejs.org" target="_blank">https://nodejs.org</a><br>
+  Klicke dort auf den großen grünen Knopf <strong>„LTS"</strong> und folge der Installation (einfach alles mit „Weiter" bestätigen).
+</div>
+
+<h2>Starten &ndash; Schritt für Schritt</h2>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div>Lege alle heruntergeladenen Dateien in <strong>einen gemeinsamen Ordner</strong>, zum Beispiel auf deinem Desktop oder in Dokumente.</div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div>Stelle sicher, dass Node.js installiert ist (siehe oben).</div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div>Doppelklicke auf <code>START.bat</code>. Es öffnet sich ein schwarzes Fenster &ndash; das ist der Server. <strong>Dieses Fenster offen lassen!</strong></div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div>Der Browser öffnet sich automatisch mit der Spielansicht. Über den Link oben rechts gelangst du zum Editor.</div>
+</div>
+<div class="step">
+  <div class="step-num">5</div>
+  <div>Zum Beenden: das schwarze Fenster schließen oder darin <code>Strg + C</code> drücken.</div>
+</div>
+
+<h2>Dateien im Überblick</h2>
+<table>
+  <tr><th>Datei</th><th>Funktion</th></tr>
+  <tr><td><code>START.bat</code></td><td>Startet den Server und öffnet den Browser &ndash; hier immer beginnen</td></tr>
+  <tr><td><code>graph.json</code></td><td>Dein Entscheidungsbaum &ndash; wird beim Speichern automatisch überschrieben</td></tr>
+  <tr><td><code>index.html</code></td><td>Spielansicht (Szenarien durchspielen)</td></tr>
+  <tr><td><code>editor.html</code></td><td>Graph-Editor (Szenarien und Antworten bearbeiten)</td></tr>
+  <tr><td><code>server.js</code></td><td>Der lokale Server &ndash; wird von START.bat automatisch gestartet</td></tr>
+  <tr><td><code>Anleitung.html</code></td><td>Diese Datei</td></tr>
+</table>
+
+<h2>Wie der Editor funktioniert</h2>
+<ul>
+  <li><span class="tag">Szenarien</span> sind die Knoten des Graphen &ndash; jedes Szenario enthält eine Frage oder ein Ereignis.</li>
+  <li><span class="tag">Antworten</span> sind die Kanten &ndash; jede Antwort verbindet zwei Szenarien und erscheint dem Spieler als Auswahlmöglichkeit.</li>
+  <li>Im Canvas (rechts) kannst du Knoten mit der Maus verschieben, per Mausrad zoomen und mit Klick bearbeiten.</li>
+  <li>Unter dem Tab <strong>„Graph"</strong> kannst du festlegen, welches Szenario das Startszenario ist.</li>
+  <li><strong>Speichern</strong> (oben rechts) überschreibt <code>graph.json</code> direkt &ndash; kein manuelles Exportieren nötig.</li>
+</ul>
+
+<h2>Häufige Fragen</h2>
+<p><strong>Der Browser öffnet sich, aber die Seite lädt nicht?</strong><br>
+Warte 2&ndash;3 Sekunden und lade die Seite neu (<code>F5</code>). Falls das schwarze Fenster eine Fehlermeldung zeigt, ist Node.js vermutlich nicht richtig installiert.</p>
+
+<p><strong>Ich habe START.bat doppelt geklickt, aber nichts passiert?</strong><br>
+Windows schützt manchmal heruntergeladene .bat-Dateien. Rechtsklick auf <code>START.bat</code> → „Als Administrator ausführen" oder im selben Ordner die Eingabeaufforderung öffnen und <code>START.bat</code> eintippen.</p>
+
+<p><strong>Kann ich den Graphen sichern?</strong><br>
+Einfach <code>graph.json</code> kopieren &ndash; das ist dein gesamter Entscheidungsbaum. Im Editor gibt es auch „JSON exportieren" als zusätzliche Sicherung.</p>
+
+<p><strong>Kann ich ohne Internet arbeiten?</strong><br>
+Ja &ndash; der Server läuft vollständig lokal. Für die Schriftarten (Designelemente) wird einmalig eine Internetverbindung benötigt.</p>
+
+<div class="box info" style="margin-top:36px;">
+  <strong>Tipp:</strong> Wenn du häufig mit dem Entscheidungsbaum arbeitest, erstelle eine Verknüpfung zu <code>START.bat</code> auf deinem Desktop (Rechtsklick → „Verknüpfung erstellen").
+</div>
+
+</body>
+</html>
