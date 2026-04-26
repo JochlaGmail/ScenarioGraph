@@ -106,6 +106,12 @@
       "from": "node_1777172808531",
       "to": "node_6",
       "label": "Ich nehme die Karte aus der Schublade und folge ihr."
+    },
+    "edge_1777173225877": {
+      "id": "edge_1777173225877",
+      "from": "node_1777172808531",
+      "to": "node_1777172808531",
+      "label": "Ich versuche an etwas anderes zu denken."
     }
   }
 }
