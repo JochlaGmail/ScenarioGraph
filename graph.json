@@ -32,6 +32,10 @@
     "node_1777172808531": {
       "id": "node_1777172808531",
       "label": "Du kannst nicht aufhören an die Karte zu denken, die sich in deiner Schublade befindet."
+    },
+    "node_1777216756192": {
+      "id": "node_1777216756192",
+      "label": "Neues Szenario – bitte beschreiben"
     }
   },
   "edges": {
