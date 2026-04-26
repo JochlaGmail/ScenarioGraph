@@ -1,5 +1,8 @@
 {
-  "useJsonBin": true,
-  "jsonBinId": "69ed737eaaba8821973a5c9f",
+  "useGitHub": false,
+  "gitHubUser": "JochlaGmail",
+  "gitHubRepo": "ScenarioGraph",
+  "gitHubBranch": "main",
+  "gitHubFile": "graph.json",
   "port": 3000
 }
