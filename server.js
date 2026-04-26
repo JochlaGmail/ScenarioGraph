@@ -4,9 +4,11 @@
  * Cloud:  wird von Render automatisch gestartet
  *
  * Konfiguration: configSettings.json
- *   useJsonBin: false  ->  liest/schreibt graph.json lokal
- *   useJsonBin: true   ->  liest/schreibt ueber JSONbin.io
- *                          API-Key kommt aus Umgebungsvariable JSONBIN_API_KEY
+ *   useGitHub: false  ->  liest/schreibt graph.json lokal
+ *   useGitHub: true   ->  liest/schreibt ueber GitHub API
+ *                         GitHub Personal Access Token kommt aus
+ *                         Umgebungsvariable GITHUB_TOKEN (nur zum Schreiben noetig)
+ *                         Bei public Repository: Lesen funktioniert auch ohne Token
  */
 
 const http = require('http');
@@ -15,7 +17,14 @@ const path = require('path');
 
 // ── Konfiguration laden ───────────────────────────────────────────────────────
 const CONFIG_FILE = path.join(__dirname, 'configSettings.json');
-let config = { useJsonBin: false, jsonBinId: '', port: 3000 };
+let config = {
+  useGitHub:    false,
+  gitHubUser:   '',
+  gitHubRepo:   '',
+  gitHubBranch: 'main',
+  gitHubFile:   'graph.json',
+  port:         3000
+};
 
 try {
   const raw = fs.readFileSync(CONFIG_FILE, 'utf8');
@@ -24,20 +33,26 @@ try {
   console.warn('  configSettings.json nicht gefunden oder fehlerhaft -- nutze Standardwerte.');
 }
 
-// Port: Render setzt process.env.PORT, lokal kommt er aus der config
-const PORT       = process.env.PORT || config.port;
-const ROOT       = __dirname;
-const GRAPH_FILE = path.join(ROOT, 'graph.json');
-const USE_JSONBIN = config.useJsonBin === true;
-const JSONBIN_ID  = config.jsonBinId || '';
-const JSONBIN_KEY = process.env.JSONBIN_API_KEY || '';
+const PORT         = process.env.PORT || config.port;
+const ROOT         = __dirname;
+const GRAPH_FILE   = path.join(ROOT, 'graph.json');
+const USE_GITHUB   = config.useGitHub === true;
+const GH_USER      = config.gitHubUser;
+const GH_REPO      = config.gitHubRepo;
+const GH_BRANCH    = config.gitHubBranch || 'main';
+const GH_FILE      = config.gitHubFile   || 'graph.json';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+
+// GitHub API Basis-URL fuer die Datei
+const GH_API_URL = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_FILE}`;
 
 // Startmeldung
 console.log('\n  Entscheidungsbaum startet...');
-console.log('  Modus : ' + (USE_JSONBIN ? 'JSONbin.io (Cloud)' : 'Lokal (graph.json)'));
-if (USE_JSONBIN) {
-  if (!JSONBIN_ID)  console.warn('  WARNUNG: jsonBinId fehlt in configSettings.json!');
-  if (!JSONBIN_KEY) console.warn('  WARNUNG: Umgebungsvariable JSONBIN_API_KEY nicht gesetzt!');
+console.log('  Modus : ' + (USE_GITHUB ? 'GitHub API (Cloud)' : 'Lokal (graph.json)'));
+if (USE_GITHUB) {
+  console.log('  Repo  : ' + GH_USER + '/' + GH_REPO + ' (' + GH_BRANCH + ')');
+  if (!GH_USER || !GH_REPO) console.warn('  WARNUNG: gitHubUser oder gitHubRepo fehlt in configSettings.json!');
+  if (!GITHUB_TOKEN)         console.warn('  WARNUNG: GITHUB_TOKEN nicht gesetzt -- Schreiben wird fehlschlagen!');
 }
 
 // ── MIME-Typen ────────────────────────────────────────────────────────────────
@@ -71,6 +86,17 @@ function validateGraph(parsed) {
   }
 }
 
+function githubHeaders(withToken) {
+  const headers = {
+    'Accept':     'application/vnd.github+json',
+    'User-Agent': 'Entscheidungsbaum-Server',
+  };
+  if (withToken && GITHUB_TOKEN) {
+    headers['Authorization'] = 'Bearer ' + GITHUB_TOKEN;
+  }
+  return headers;
+}
+
 // ── Graph lesen ───────────────────────────────────────────────────────────────
 
 function readGraphLocal(res) {
@@ -85,18 +111,25 @@ function readGraphLocal(res) {
   });
 }
 
-async function readGraphJsonBin(res) {
+async function readGraphGitHub(res) {
   try {
-    const response = await fetch(
-      `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`,
-      { headers: { 'X-Master-Key': JSONBIN_KEY } }
-    );
-    if (!response.ok) throw new Error('JSONbin Lesefehler: ' + response.status);
+    // GitHub API gibt die Datei base64-kodiert zurueck
+    const url = GH_API_URL + '?ref=' + GH_BRANCH;
+    const response = await fetch(url, {
+      headers: githubHeaders(true) // Token optional bei public Repos
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error('GitHub Lesefehler ' + response.status + ': ' + text);
+    }
     const data = await response.json();
-    // JSONbin verpackt den Inhalt unter data.record
+    // Inhalt ist base64-kodiert, dekodieren
+    const decoded = Buffer.from(data.content, 'base64').toString('utf8');
+    const graph = JSON.parse(decoded);
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(data.record));
+    res.end(JSON.stringify(graph));
   } catch(e) {
+    console.error('  Lesefehler GitHub:', e.message);
     res.writeHead(502, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: e.message }));
   }
@@ -124,25 +157,47 @@ function writeGraphLocal(body, res) {
   }
 }
 
-async function writeGraphJsonBin(body, res) {
+async function writeGraphGitHub(body, res) {
   try {
     const parsed = JSON.parse(body);
     validateGraph(parsed);
-    const response = await fetch(
-      `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': JSONBIN_KEY,
-        },
-        body: JSON.stringify(parsed),
-      }
-    );
-    if (!response.ok) throw new Error('JSONbin Schreibfehler: ' + response.status);
+
+    // Schritt 1: aktuelle SHA der Datei holen (GitHub braucht sie zum Ueberschreiben)
+    const getResponse = await fetch(GH_API_URL + '?ref=' + GH_BRANCH, {
+      headers: githubHeaders(true)
+    });
+    if (!getResponse.ok) {
+      const text = await getResponse.text();
+      throw new Error('GitHub SHA-Abruf fehlgeschlagen ' + getResponse.status + ': ' + text);
+    }
+    const current = await getResponse.json();
+    const sha = current.sha;
+
+    // Schritt 2: Datei mit neuem Inhalt ueberschreiben
+    const newContent = Buffer.from(JSON.stringify(parsed, null, 2)).toString('base64');
+    const putResponse = await fetch(GH_API_URL, {
+      method: 'PUT',
+      headers: {
+        ...githubHeaders(true),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: 'Graph aktualisiert via Entscheidungsbaum-Editor',
+        content: newContent,
+        sha:     sha,
+        branch:  GH_BRANCH,
+      }),
+    });
+
+    if (!putResponse.ok) {
+      const text = await putResponse.text();
+      throw new Error('GitHub Schreibfehler ' + putResponse.status + ': ' + text);
+    }
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
   } catch(e) {
+    console.error('  Schreibfehler GitHub:', e.message);
     res.writeHead(502, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: e.message }));
   }
@@ -159,7 +214,7 @@ const server = http.createServer((req, res) => {
 
   // GET /api/graph
   if (req.method === 'GET' && req.url.startsWith('/api/graph')) {
-    if (USE_JSONBIN) { readGraphJsonBin(res); } else { readGraphLocal(res); }
+    if (USE_GITHUB) { readGraphGitHub(res); } else { readGraphLocal(res); }
     return;
   }
 
@@ -168,7 +223,7 @@ const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
-      if (USE_JSONBIN) { writeGraphJsonBin(body, res); } else { writeGraphLocal(body, res); }
+      if (USE_GITHUB) { writeGraphGitHub(body, res); } else { writeGraphLocal(body, res); }
     });
     return;
   }
@@ -187,7 +242,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log('  Laeuft auf Port ' + PORT);
-  if (!USE_JSONBIN) {
+  if (!USE_GITHUB) {
     console.log('  Spielansicht : http://localhost:' + PORT + '/index.html');
     console.log('  Graph-Editor : http://localhost:' + PORT + '/editor.html');
   }
