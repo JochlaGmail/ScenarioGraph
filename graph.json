@@ -28,6 +28,10 @@
     "node_7": {
       "id": "node_7",
       "label": "Du läufst tiefer in den Wald und verlierst dich. Nach Stunden findest du wieder zur Weggabelung zurück."
+    },
+    "node_1777172808531": {
+      "id": "node_1777172808531",
+      "label": "Du kannst nicht aufhören an die Karte zu denken, die sich in deiner Schublade befindet."
     }
   },
   "edges": {
@@ -90,6 +94,24 @@
       "from": "node_7",
       "to": "node_1",
       "label": "Ich stehe wieder an der Weggabelung und atme tief durch."
+    },
+    "edge_1777172733540": {
+      "id": "edge_1777172733540",
+      "from": "node_1",
+      "to": "node_2",
+      "label": "Neue Antwort"
+    },
+    "edge_1777172842127": {
+      "id": "edge_1777172842127",
+      "from": "node_4",
+      "to": "node_1777172808531",
+      "label": "Ich nehme die Karte mit und verstecke sie in einer Schublade."
+    },
+    "edge_1777172898078": {
+      "id": "edge_1777172898078",
+      "from": "node_1777172808531",
+      "to": "node_6",
+      "label": "Ich nehme die Karte aus der Schublade und folge ihr."
     }
   }
 }
