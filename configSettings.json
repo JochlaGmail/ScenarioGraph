@@ -5,6 +5,6 @@
   "gitHubUser": "JochlaGmail",
   "gitHubRepo": "ScenarioGraph",
   "gitHubBranch": "main",
-  "defaultGraph": "",
+  "defaultGraph": "Abenteuer",
   "port": 3000
 }
