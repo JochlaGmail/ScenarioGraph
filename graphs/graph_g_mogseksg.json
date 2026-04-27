@@ -1,0 +1,21 @@
+{
+  "startNode": "node_1777269559867",
+  "nodes": {
+    "node_1777269559867": {
+      "id": "node_1777269559867",
+      "label": "Neues Szenario"
+    },
+    "node_1777269567761": {
+      "id": "node_1777269567761",
+      "label": "Neues Szenario"
+    }
+  },
+  "edges": {
+    "edge_1777269573354": {
+      "id": "edge_1777269573354",
+      "from": "node_1777269559867",
+      "to": "node_1777269567761",
+      "label": "Neue Antwort"
+    }
+  }
+}

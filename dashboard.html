@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScenarioGraph – Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="auth.js"></script>
+<style>
+  :root {
+    --bg: #0d0b08;
+    --surface: #171410;
+    --surface2: #1f1b16;
+    --border: #2e2820;
+    --border2: #3d3428;
+    --gold: #c9a84c;
+    --gold-dim: #7d6630;
+    --gold-bg: rgba(201,168,76,0.08);
+    --cream: #e8dfc8;
+    --cream-dim: #9d9080;
+    --red: #8b2d2d;
+    --red-dim: #5a1d1d;
+    --green-bright: #4caf6e;
+    --text: #d4c9b0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Text', serif;
+    font-size: 16px;
+    min-height: 100vh;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 12px;
+  }
+  .nav-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    font-family: 'Crimson Text', serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-outline {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--cream-dim);
+  }
+  .btn-outline:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .btn-gold {
+    background: var(--gold);
+    border: none;
+    color: #0d0b08;
+    font-weight: 600;
+  }
+  .btn-gold:hover { background: #e0be6a; }
+  .btn-danger {
+    background: none;
+    border: 1px solid var(--red-dim);
+    color: #d06060;
+  }
+  .btn-danger:hover { background: var(--red-dim); color: var(--cream); }
+
+  /* ACCESS DENIED */
+  #access-denied {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+    gap: 20px;
+    text-align: center;
+    padding: 40px;
+  }
+  #access-denied h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 1.5rem;
+  }
+  #access-denied p { color: var(--cream-dim); max-width: 400px; line-height: 1.7; }
+  #google-signin-denied { margin-top: 8px; }
+
+  /* MAIN CONTENT */
+  #main-content {
+    display: none;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--cream);
+    margin-bottom: 8px;
+  }
+  .page-sub {
+    color: var(--cream-dim);
+    font-size: 0.95rem;
+    margin-bottom: 40px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  .graph-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .graph-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .graph-card:hover { border-color: var(--border2); }
+  .graph-card.default-card { border-color: var(--gold-dim); }
+  .graph-card.default-card::before {
+    content: 'Standard';
+    position: absolute;
+    top: 10px; right: 12px;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .graph-card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--cream);
+    margin-bottom: 6px;
+  }
+  .graph-card-id {
+    font-size: 0.72rem;
+    color: var(--cream-dim);
+    font-family: monospace;
+    margin-bottom: 16px;
+  }
+  .graph-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .graph-card-actions .btn {
+    font-size: 0.75rem;
+    padding: 5px 12px;
+  }
+
+  .empty-state {
+    border: 1px dashed var(--border2);
+    padding: 48px;
+    text-align: center;
+    color: var(--cream-dim);
+    font-style: italic;
+    grid-column: 1 / -1;
+  }
+
+  /* MODAL */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    max-width: 440px;
+    width: 90%;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #modal h2 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.1rem; }
+  #modal p { color: var(--cream-dim); line-height: 1.6; font-size: 0.95rem; }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); }
+  .field-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--cream);
+    font-family: 'Crimson Text', serif;
+    font-size: 1rem;
+    padding: 9px 12px;
+    border-radius: 2px;
+    width: 100%;
+  }
+  .field-input:focus { outline: none; border-color: var(--gold-dim); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .user-badge {
+    font-size: 0.78rem;
+    color: var(--cream-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .auth-dot { width: 7px; height: 7px; border-radius: 50%; background: #4caf6e; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">ScenarioGraph</span>
+  <div class="nav-right">
+    <a href="index.html" class="btn btn-outline">Spielansicht</a>
+    <button class="btn btn-outline" id="logout-btn" style="display:none" onclick="handleLogout()">Abmelden</button>
+  </div>
+</nav>
+
+<!-- Kein Zugriff -->
+<div id="access-denied">
+  <h2>Kein Zugriff</h2>
+  <p>Das Dashboard ist nur fuer autorisierte Nutzer zugaenglich. Bitte melde dich an.</p>
+  <div id="google-signin-denied">
+    <div id="g_id_onload"
+      data-client_id="930379479474-fmn9vu7ecnk9bmb1aiv6tr4fbfm7ucv2.apps.googleusercontent.com"
+      data-callback="handleGoogleCredential"
+      data-auto_select="true"
+      data-use_fedcm_for_prompt="true">
+    </div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="sign_in_with"
+      data-shape="rectangular"
+      data-logo_alignment="left">
+    </div>
+  </div>
+  <p id="denied-msg" style="display:none;color:#d06060;">Du bist eingeloggt, hast aber keinen Schreibzugriff.</p>
+  <a href="index.html" class="btn btn-outline" style="margin-top:8px;">Zur Spielansicht</a>
+</div>
+
+<!-- Hauptinhalt -->
+<div id="main-content">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-sub">Verwalte deine Graphen und teile sie per Link.</p>
+
+  <div class="section-header">
+    <span class="section-title">Meine Graphen</span>
+    <button class="btn btn-gold" onclick="showCreateModal()">+ Neuer Graph</button>
+  </div>
+
+  <div class="graph-grid" id="graph-grid">
+    <div class="empty-state">Laedt...</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title"></h2>
+    <p id="modal-desc" style="display:none"></p>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<script>
+let graphList = { graphs: [] };
+let serverConfig = {};
+
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    if (r.ok) serverConfig = await r.json();
+  } catch(e) {}
+}
+
+async function loadGraphList() {
+  try {
+    const r = await fetch('/api/graphlist');
+    if (r.ok) graphList = await r.json();
+    renderGrid();
+  } catch(e) {
+    console.error('GraphList Fehler:', e);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById('graph-grid');
+  if (!graphList.graphs || graphList.graphs.length === 0) {
+    grid.innerHTML = '<div class="empty-state">Noch keine Graphen vorhanden. Erstelle deinen ersten!</div>';
+    return;
+  }
+  grid.innerHTML = graphList.graphs.map(g => {
+    const isDefault = g.id === serverConfig.defaultGraph;
+    const playUrl   = `/?graph=${g.id}`;
+    const editUrl   = `/editor.html?graph=${g.id}`;
+    const defaultBtn = isDefault
+      ? `<button class="btn btn-gold" disabled>Standard</button>`
+      : `<button class="btn btn-outline" onclick="setDefaultGraph('${g.id}')">Als Standard</button>`;
+    return `
+      <div class="graph-card ${isDefault ? 'default-card' : ''}">
+        <div class="graph-card-name">${escHtml(g.name)}</div>
+        <div class="graph-card-id">${escHtml(g.id)}</div>
+        <div class="graph-card-actions">
+          <a href="${playUrl}" class="btn btn-outline">Spielen</a>
+          <a href="${editUrl}" class="btn btn-outline">Bearbeiten</a>
+          ${defaultBtn}
+          <button class="btn btn-outline" onclick="copyLink('${playUrl}')">Link kopieren</button>
+          <button class="btn btn-danger" onclick="confirmDelete('${g.id}', '${escHtml(g.name)}')">Loeschen</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function setDefaultGraph(id) {
+  try {
+    const r = await Auth.authFetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ defaultGraph: id })
+    });
+    if (!r.ok) throw new Error('Fehler beim Setzen des Standardgraphen');
+    serverConfig.defaultGraph = id;
+    renderGrid();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function copyLink(path) {
+  const url = window.location.origin + path;
+  navigator.clipboard.writeText(url).then(() => {
+    alert('Link kopiert: ' + url);
+  });
+}
+
+function showCreateModal() {
+  document.getElementById('modal-title').textContent = 'Neuen Graphen erstellen';
+  document.getElementById('modal-desc').style.display = 'none';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="field-group">
+      <label class="field-label">Name des Graphen</label>
+      <input class="field-input" id="new-graph-name" placeholder="z.B. Mein Abenteuer" maxlength="60">
+    </div>
+  `;
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">Abbrechen</button>
+    <button class="btn btn-gold" onclick="createGraph()">Erstellen</button>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('new-graph-name').focus(), 100);
+}
+
+async function createGraph() {
+  const name = (document.getElementById('new-graph-name').value || '').trim();
+  if (!name) return alert('Bitte einen Namen eingeben.');
+
+  const id = 'g_' + Date.now().toString(36);
+  const newGraph = {
+    startNode: '',
+    nodes: {},
+    edges: {}
+  };
+
+  try {
+    // Graph-Datei anlegen
+    const r = await Auth.authFetch('/api/graph?id=' + id, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newGraph)
+    });
+    if (!r.ok) throw new Error('Graph konnte nicht erstellt werden');
+
+    // GraphList aktualisieren
+    graphList.graphs.push({ id, name, createdAt: new Date().toISOString() });
+    const r2 = await Auth.authFetch('/api/graphlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(graphList)
+    });
+    if (!r2.ok) throw new Error('GraphList konnte nicht gespeichert werden');
+
+    closeModal();
+    renderGrid();
+    // Direkt zum Editor
+    window.location.href = '/editor.html?graph=' + id;
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+function confirmDelete(id, name) {
+  document.getElementById('modal-title').textContent = 'Graph loeschen?';
+  document.getElementById('modal-desc').textContent = '"' + name + '" wird unwiderruflich geloescht.';
+  document.getElementById('modal-desc').style.display = 'block';
+  document.getElementById('modal-body').innerHTML = '';
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">Abbrechen</button>
+    <button class="btn btn-danger" onclick="deleteGraph('${id}')">Loeschen</button>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function deleteGraph(id) {
+  // Graph aus Liste entfernen (Datei auf GitHub bleibt, wird nur aus Liste gestrichen)
+  graphList.graphs = graphList.graphs.filter(g => g.id !== id);
+  try {
+    await Auth.authFetch('/api/graphlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(graphList)
+    });
+    closeModal();
+    renderGrid();
+  } catch(e) {
+    alert('Fehler beim Loeschen: ' + e.message);
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function handleLogout() {
+  Auth.logout();
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.addEventListener('auth:ready', async e => {
+  const requireAuth = e.detail.requireAuth !== false;
+  const logoutBtn   = document.getElementById('logout-btn');
+
+  // Abmelden-Button nur zeigen wenn requireAuth aktiv und eingeloggt
+  if (requireAuth && e.detail.loggedIn) {
+    logoutBtn.style.display = 'block';
+  } else {
+    logoutBtn.style.display = 'none';
+  }
+
+  if (e.detail.authorized) {
+    document.getElementById('access-denied').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    await loadConfig();
+    await loadGraphList();
+  } else if (e.detail.loggedIn && !e.detail.authorized) {
+    document.getElementById('access-denied').style.display = 'flex';
+    document.getElementById('denied-msg').style.display = 'block';
+  } else {
+    document.getElementById('access-denied').style.display = 'flex';
+  }
+});
+
+async function init() {
+  Auth.init();
+}
+
+init();
+</script>
+</body>
+</html>

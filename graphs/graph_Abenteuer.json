@@ -1,0 +1,95 @@
+{
+  "startNode": "node_1",
+  "nodes": {
+    "node_1": {
+      "id": "node_1",
+      "label": "Du stehst an einer Weggabelung im dunklen Wald. Äste knacken um dich herum. Woher kam das Geräusch?"
+    },
+    "node_2": {
+      "id": "node_2",
+      "label": "Du folgst dem Licht und findest ein verlassenes Forsthaus. Die Tür steht offen. Was tust du?"
+    },
+    "node_3": {
+      "id": "node_3",
+      "label": "Du bleibst still und horchst. Das Knacken kommt näher. Im Mondlicht erkennst du eine Silhouette. Was machst du?"
+    },
+    "node_4": {
+      "id": "node_4",
+      "label": "Drinnen findest du Kerzen, eine Karte und einen Rucksack mit Vorräten. Die Karte zeigt einen versteckten Pfad. Folgst du ihm?"
+    },
+    "node_5": {
+      "id": "node_5",
+      "label": "Du rufst in die Dunkelheit. Eine Stimme antwortet: 'Endlich! Ich brauche deine Hilfe.' Was sagst du?"
+    },
+    "node_6": {
+      "id": "node_6",
+      "label": "Du bist dem Pfad gefolgt und hast einen Schatz gefunden. Ende gut, alles gut! 🎉"
+    },
+    "node_7": {
+      "id": "node_7",
+      "label": "Du läufst tiefer in den Wald und verlierst dich. Nach Stunden findest du wieder zur Weggabelung zurück."
+    }
+  },
+  "edges": {
+    "edge_1": {
+      "id": "edge_1",
+      "from": "node_1",
+      "to": "node_2",
+      "label": "Ich folge dem schwachen Lichtschimmer rechts von mir."
+    },
+    "edge_2": {
+      "id": "edge_2",
+      "from": "node_1",
+      "to": "node_3",
+      "label": "Ich halte an und lausche in die Stille."
+    },
+    "edge_3": {
+      "id": "edge_3",
+      "from": "node_2",
+      "to": "node_4",
+      "label": "Ich betrete das Forsthaus vorsichtig."
+    },
+    "edge_4": {
+      "id": "edge_4",
+      "from": "node_2",
+      "to": "node_7",
+      "label": "Das Haus ist mir unheimlich – ich laufe weiter."
+    },
+    "edge_5": {
+      "id": "edge_5",
+      "from": "node_3",
+      "to": "node_5",
+      "label": "Ich rufe: 'Wer ist da?'"
+    },
+    "edge_6": {
+      "id": "edge_6",
+      "from": "node_3",
+      "to": "node_7",
+      "label": "Ich renne in die entgegengesetzte Richtung!"
+    },
+    "edge_7": {
+      "id": "edge_7",
+      "from": "node_4",
+      "to": "node_6",
+      "label": "Ja, ich nehme den Rucksack und folge der Karte."
+    },
+    "edge_8": {
+      "id": "edge_8",
+      "from": "node_5",
+      "to": "node_6",
+      "label": "Ich frage: 'Was brauchst du?' und helfe der Person."
+    },
+    "edge_9": {
+      "id": "edge_9",
+      "from": "node_5",
+      "to": "node_7",
+      "label": "Ich misstraue der Stimme und laufe weg."
+    },
+    "edge_10": {
+      "id": "edge_10",
+      "from": "node_7",
+      "to": "node_1",
+      "label": "Ich stehe wieder an der Weggabelung und atme tief durch."
+    }
+  }
+}

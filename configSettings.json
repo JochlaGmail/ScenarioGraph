@@ -1,8 +1,9 @@
 {
-  "useGitHub": true,
+  "useGitHub": false,
+  "requireAuth": false,
   "gitHubUser": "JochlaGmail",
   "gitHubRepo": "ScenarioGraph",
   "gitHubBranch": "main",
-  "gitHubFile": "graph.json",
+  "defaultGraph": "Abenteuer",
   "port": 3000
 }

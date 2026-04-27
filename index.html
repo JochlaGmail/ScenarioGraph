@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entscheidungsbaum – Spielansicht</title>
+<title>ScenarioGraph – Spielansicht</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="auth.js"></script>
 <style>
   :root {
     --bg: #0d0b08;
@@ -19,9 +21,7 @@
     --text: #d4c9b0;
     --glow: rgba(201, 168, 76, 0.15);
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -31,11 +31,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
     overflow-x: hidden;
-    position: relative;
   }
-
   body::before {
     content: '';
     position: fixed;
@@ -46,44 +43,70 @@
     pointer-events: none;
     z-index: 0;
   }
-
   nav {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 40px;
+    padding: 16px 32px;
     border-bottom: 1px solid var(--border);
-    background: rgba(13,11,8,0.9);
+    background: rgba(13,11,8,0.92);
     backdrop-filter: blur(8px);
     position: sticky;
     top: 0;
     z-index: 100;
+    gap: 12px;
+    flex-wrap: wrap;
   }
-
   .nav-brand {
     font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--gold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
-
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
   .nav-link {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--cream-dim);
     text-decoration: none;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     border: 1px solid var(--border);
-    padding: 6px 16px;
+    padding: 6px 14px;
     border-radius: 2px;
     transition: all 0.2s;
+    cursor: pointer;
+    background: none;
+    font-family: 'Crimson Text', serif;
   }
-  .nav-link:hover {
-    color: var(--gold);
-    border-color: var(--gold-dim);
+  .nav-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+  .nav-link.gold { border-color: var(--gold-dim); color: var(--gold); }
+
+  #google-signin {
+    display: none;
   }
+
+  .user-badge {
+    font-size: 0.78rem;
+    color: var(--cream-dim);
+    letter-spacing: 0.04em;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-badge.visible { display: flex; }
+  .auth-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+  }
+  .auth-dot.authorized { background: #4caf6e; }
 
   main {
     position: relative;
@@ -94,9 +117,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0;
   }
-
   .chapter-tag {
     font-size: 0.75rem;
     letter-spacing: 0.2em;
@@ -107,15 +128,13 @@
     align-items: center;
     gap: 12px;
   }
-  .chapter-tag::before,
-  .chapter-tag::after {
+  .chapter-tag::before, .chapter-tag::after {
     content: '';
     display: block;
     width: 40px;
     height: 1px;
     background: var(--gold-dim);
   }
-
   .scenario-card {
     width: 100%;
     background: var(--surface);
@@ -127,7 +146,6 @@
     transform: translateY(16px);
     animation: fadeUp 0.5s ease forwards;
   }
-
   .scenario-card::before {
     content: '';
     position: absolute;
@@ -135,7 +153,6 @@
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
   }
-
   .scenario-card::after {
     content: '"';
     position: absolute;
@@ -146,7 +163,6 @@
     color: var(--border);
     pointer-events: none;
   }
-
   .scenario-text {
     font-size: 1.25rem;
     line-height: 1.9;
@@ -155,7 +171,6 @@
     position: relative;
     z-index: 1;
   }
-
   .answers-label {
     font-size: 0.75rem;
     letter-spacing: 0.18em;
@@ -164,14 +179,12 @@
     margin-bottom: 20px;
     align-self: flex-start;
   }
-
   .answers-list {
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
-
   .answer-btn {
     width: 100%;
     background: var(--surface);
@@ -191,12 +204,7 @@
     transform: translateX(-12px);
     line-height: 1.5;
   }
-
-  .answer-btn.visible {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
+  .answer-btn.visible { opacity: 1; transform: translateX(0); }
   .answer-num {
     font-family: 'Playfair Display', serif;
     color: var(--gold-dim);
@@ -205,27 +213,10 @@
     padding-top: 2px;
     transition: color 0.2s;
   }
-
-  .answer-btn:hover {
-    background: var(--surface2);
-    border-color: var(--gold-dim);
-    color: var(--cream);
-    transform: translateX(4px);
-  }
-  .answer-btn:hover .answer-num {
-    color: var(--gold);
-  }
-
-  .answer-btn::after {
-    content: '→';
-    margin-left: auto;
-    opacity: 0;
-    color: var(--gold);
-    transition: opacity 0.2s;
-    flex-shrink: 0;
-  }
+  .answer-btn:hover { background: var(--surface2); border-color: var(--gold-dim); color: var(--cream); transform: translateX(4px); }
+  .answer-btn:hover .answer-num { color: var(--gold); }
+  .answer-btn::after { content: '->'; margin-left: auto; opacity: 0; color: var(--gold); transition: opacity 0.2s; flex-shrink: 0; }
   .answer-btn:hover::after { opacity: 1; }
-
   .no-answers {
     width: 100%;
     text-align: center;
@@ -233,9 +224,7 @@
     border: 1px dashed var(--border);
     color: var(--cream-dim);
     font-style: italic;
-    font-size: 1.05rem;
   }
-
   .restart-btn {
     margin-top: 24px;
     background: none;
@@ -249,31 +238,20 @@
     cursor: pointer;
     transition: all 0.2s;
   }
-  .restart-btn:hover {
-    background: var(--glow);
-    border-color: var(--gold);
-  }
-
+  .restart-btn:hover { background: var(--glow); border-color: var(--gold); }
   .history-trail {
     width: 100%;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 32px;
-    opacity: 0.7;
   }
-
   .trail-dot {
     width: 8px; height: 8px;
     border-radius: 50%;
     background: var(--gold-dim);
-    flex-shrink: 0;
   }
-  .trail-dot.current {
-    background: var(--gold);
-    box-shadow: 0 0 6px var(--gold);
-  }
-
+  .trail-dot.current { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
   .error-msg {
     width: 100%;
     text-align: center;
@@ -281,99 +259,81 @@
     color: var(--cream-dim);
     font-style: italic;
   }
-  .error-msg strong {
-    color: var(--red);
-    display: block;
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-    font-style: normal;
-  }
-
-  @keyframes fadeUp {
-    to { opacity: 1; transform: translateY(0); }
-  }
-
+  .error-msg strong { color: var(--red); display: block; font-size: 1.1rem; margin-bottom: 8px; font-style: normal; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
   @media (max-width: 600px) {
     main { padding: 40px 20px 60px; }
     .scenario-card { padding: 32px 28px; }
-    nav { padding: 16px 20px; }
+    nav { padding: 14px 20px; }
   }
 </style>
 </head>
 <body>
 
 <nav>
-  <span class="nav-brand">Entscheidungsbaum</span>
-  <a href="editor.html" class="nav-link">✦ Graph-Editor</a>
+  <span class="nav-brand">ScenarioGraph</span>
+  <div class="nav-right">
+    <div class="user-badge" id="user-badge" style="display:none">
+      <div class="auth-dot" id="auth-dot"></div>
+      <span id="user-label">Eingeloggt</span>
+    </div>
+    <a href="dashboard.html" class="nav-link gold" id="dashboard-link" style="display:none">Dashboard</a>
+    <div id="google-signin" style="display:none">
+      <div id="g_id_onload"
+        data-client_id="930379479474-fmn9vu7ecnk9bmb1aiv6tr4fbfm7ucv2.apps.googleusercontent.com"
+        data-callback="handleGoogleCredential"
+        data-auto_select="true"
+        data-use_fedcm_for_prompt="true">
+      </div>
+      <div class="g_id_signin"
+        data-type="standard"
+        data-size="small"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-shape="rectangular"
+        data-logo_alignment="left">
+      </div>
+    </div>
+    <button class="nav-link" id="logout-btn" style="display:none" onclick="handleLogout()">Abmelden</button>
+  </div>
 </nav>
 
 <main id="app">
-  <div class="error-msg"><strong>Lade…</strong></div>
+  <div class="error-msg"><strong>Laedt...</strong></div>
 </main>
 
 <script>
-// Lädt den Graphen: zuerst vom Server-API, dann direkt als Datei, kein localStorage
-async function loadGraph() {
-  // 1. Versuch: lokaler Server (node server.js)
-  try {
-    const r = await fetch('/api/graph');
-    if (r.ok) {
-      const data = await r.json();
-      if (data && data.nodes) return { source: 'server', data };
-    }
-  } catch(e) { /* Server nicht erreichbar */ }
-
-  // 2. Versuch: graph.json direkt (z. B. über einen anderen Webserver)
-  try {
-    const r = await fetch('graph.json');
-    if (r.ok) {
-      const data = await r.json();
-      if (data && data.nodes) return { source: 'file', data };
-    }
-  } catch(e) { /* auch das nicht erreichbar */ }
-
-  return null;
-}
-
 let graph = null;
 let currentNodeId = null;
 let history = [];
-let graphSource = 'server'; // für Reload-Hinweis
+let serverConfig = {};
 
-async function init() {
-  const result = await loadGraph();
-  if (!result) {
-    document.getElementById('app').innerHTML = `
-      <div class="error-msg">
-        <strong>Kein Graph gefunden</strong>
-        Starte den lokalen Server mit <code style="font-family:monospace;color:var(--gold)">node server.js</code>
-        und öffne <a href="http://localhost:3000" style="color:var(--gold)">http://localhost:3000</a>,
-        oder öffne den <a href="editor.html" style="color:var(--gold)">Graph-Editor</a>
-        und importiere eine graph.json.
-      </div>`;
-    return;
-  }
-  graph = result.data;
-  graphSource = result.source;
-  currentNodeId = graph.startNode;
-  history = [currentNodeId];
-  renderNode();
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    if (r.ok) serverConfig = await r.json();
+  } catch(e) {}
 }
 
-// Neu laden vom Server (nach Speichern im Editor)
-async function reloadGraph() {
-  const result = await loadGraph();
-  if (!result) return;
-  graph = result.data;
-  if (!graph.nodes[currentNodeId]) {
+async function loadGraph(graphId) {
+  const id = graphId || serverConfig.defaultGraph;
+  if (!id) {
+    document.getElementById('app').innerHTML = `<div class="error-msg"><strong>Kein Standardgraph konfiguriert.</strong></div>`;
+    return;
+  }
+  try {
+    const r = await fetch('/api/graph?id=' + encodeURIComponent(id));
+    if (!r.ok) throw new Error('Graph nicht gefunden');
+    graph = await r.json();
     currentNodeId = graph.startNode;
     history = [currentNodeId];
+    renderNode();
+  } catch(e) {
+    document.getElementById('app').innerHTML = `<div class="error-msg"><strong>Graph konnte nicht geladen werden.</strong>${escHtml(e.message)}</div>`;
   }
-  renderNode();
 }
 
 function getOutgoingEdges(nodeId) {
-  // Gibt [{key, edge}] zurück – key ist der verlässliche Lookup-Schlüssel
   return Object.entries(graph.edges)
     .filter(([key, e]) => e.from === nodeId)
     .map(([key, e]) => ({ key, ...e }));
@@ -388,17 +348,15 @@ function renderNode() {
   const outgoing = getOutgoingEdges(currentNodeId);
   const isEnd = outgoing.length === 0;
 
-  // History dots
   const dots = history.map((id, i) =>
     `<div class="trail-dot ${i === history.length - 1 ? 'current' : ''}"></div>`
   ).join('');
 
-  // Answers
   let answersHTML = '';
   if (isEnd) {
     answersHTML = `
-      <div class="no-answers">Keine weiteren Antworten – du hast einen Endpunkt erreicht.</div>
-      <button class="restart-btn" onclick="restart()">↺ Von vorne beginnen</button>
+      <div class="no-answers">Keine weiteren Antworten -- du hast einen Endpunkt erreicht.</div>
+      <button class="restart-btn" onclick="restart()">Von vorne beginnen</button>
     `;
   } else {
     const btns = outgoing.map((edge, idx) => `
@@ -416,13 +374,10 @@ function renderNode() {
   document.getElementById('app').innerHTML = `
     <div class="chapter-tag">Szenario</div>
     <div class="history-trail">${dots}</div>
-    <div class="scenario-card">
-      <p class="scenario-text">${escHtml(node.label)}</p>
-    </div>
+    <div class="scenario-card"><p class="scenario-text">${escHtml(node.label)}</p></div>
     ${answersHTML}
   `;
 
-  // Stagger in answer buttons
   setTimeout(() => {
     document.querySelectorAll('.answer-btn').forEach((btn, i) => {
       setTimeout(() => btn.classList.add('visible'), i * 70);
@@ -444,34 +399,66 @@ function restart() {
   renderNode();
 }
 
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function handleLogout() {
+  Auth.logout();
 }
 
-// Auf BroadcastChannel horchen (Editor sendet nach Speichern)
-try {
-  const bc = new BroadcastChannel('graph_updated');
-  bc.onmessage = () => reloadGraph();
-} catch(e) {
-  // Fallback: alle 3s pollen, ob sich die Datei geändert hat (nur wenn Server läuft)
-  let lastCheck = Date.now();
-  setInterval(async () => {
-    try {
-      const r = await fetch('/api/graph?t=' + Date.now());
-      if (r.ok) {
-        const data = await r.json();
-        // Einfacher Vergleich: JSON-String
-        if (JSON.stringify(data) !== JSON.stringify(graph)) {
-          graph = data;
-          if (!graph.nodes[currentNodeId]) {
-            currentNodeId = graph.startNode;
-            history = [currentNodeId];
-          }
-          renderNode();
-        }
-      }
-    } catch(e) {}
-  }, 3000);
+function updateNavAuth(detail) {
+  const requireAuth = detail.requireAuth !== false; // default true
+  const loggedIn    = detail.loggedIn;
+  const authorized  = detail.authorized;
+
+  const badge     = document.getElementById('user-badge');
+  const authDot   = document.getElementById('auth-dot');
+  const userLabel = document.getElementById('user-label');
+  const logoutBtn = document.getElementById('logout-btn');
+  const dashLink  = document.getElementById('dashboard-link');
+  const signinDiv = document.getElementById('google-signin');
+
+  // requireAuth: false -> keine Auth-UI anzeigen
+  if (!requireAuth) {
+    badge.style.display     = 'none';
+    signinDiv.style.display = 'none';
+    logoutBtn.style.display = 'none';
+    dashLink.style.display  = authorized ? 'block' : 'none';
+    return;
+  }
+
+  // requireAuth: true
+  if (loggedIn) {
+    badge.style.display     = 'flex';
+    signinDiv.style.display = 'none';
+    logoutBtn.style.display = 'block';
+    if (authorized) {
+      authDot.classList.add('authorized');
+      userLabel.textContent  = 'Autorisiert';
+      dashLink.style.display = 'block';
+    } else {
+      authDot.classList.remove('authorized');
+      userLabel.textContent  = 'Kein Schreibzugriff';
+      dashLink.style.display = 'none';
+    }
+  } else {
+    badge.style.display     = 'none';
+    signinDiv.style.display = 'block';
+    logoutBtn.style.display = 'none';
+    dashLink.style.display  = 'none';
+  }
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auf Auth-Events hoeren
+window.addEventListener('auth:ready', e => { updateNavAuth(e.detail); });
+
+async function init() {
+  await loadConfig();
+  const params  = new URLSearchParams(window.location.search);
+  const graphId = params.get("graph") || serverConfig.defaultGraph;
+  await loadGraph(graphId);
+  Auth.init();
 }
 
 init();
