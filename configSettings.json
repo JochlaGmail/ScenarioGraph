@@ -1,5 +1,5 @@
 {
-  "useGitHub": false,
+  "useGitHub": true,
   "requireAuth": false,
   "enableLoginLog": true,
   "gitHubUser": "JochlaGmail",
