@@ -41,7 +41,8 @@ loadConfig();
 const PORT         = process.env.PORT || config.port;
 const ROOT         = __dirname;
 const USE_GITHUB   = config.useGitHub === true;
-const REQUIRE_AUTH = config.requireAuth === true;
+const REQUIRE_AUTH    = config.requireAuth === true;
+const ENABLE_LOGIN_LOG = config.enableLoginLog !== false; // default true
 const GH_USER      = config.gitHubUser;
 const GH_REPO      = config.gitHubRepo;
 const GH_BRANCH    = config.gitHubBranch || 'main';
@@ -205,23 +206,25 @@ async function handleLogin(token, res) {
   const hashedSub = hashId(payload.sub);
   const now = new Date().toISOString();
 
-  // Login loggen
-  try {
-    if (USE_GITHUB) {
-      const result = await ghRead('loginLog.json');
-      const log = result ? result.content : { log: [] };
-      const existing = log.log.find(e => e.hashedSub === hashedSub);
-      if (existing) { existing.lastLogin = now; existing.loginCount = (existing.loginCount || 1) + 1; }
-      else { log.log.push({ hashedSub, firstLogin: now, lastLogin: now, loginCount: 1 }); }
-      await ghWrite('loginLog.json', log, result ? result.sha : null, 'Login geloggt');
-    } else {
-      const log = localRead(LOGIN_LOG_FILE) || { log: [] };
-      const existing = log.log.find(e => e.hashedSub === hashedSub);
-      if (existing) { existing.lastLogin = now; existing.loginCount = (existing.loginCount || 1) + 1; }
-      else { log.log.push({ hashedSub, firstLogin: now, lastLogin: now, loginCount: 1 }); }
-      localWrite(LOGIN_LOG_FILE, log);
-    }
-  } catch(e) { console.error('Login-Log Fehler:', e.message); }
+  // Login loggen (nur wenn enableLoginLog: true)
+  if (ENABLE_LOGIN_LOG) {
+    try {
+      if (USE_GITHUB) {
+        const result = await ghRead('loginLog.json');
+        const log = result ? result.content : { log: [] };
+        const existing = log.log.find(e => e.hashedSub === hashedSub);
+        if (existing) { existing.lastLogin = now; existing.loginCount = (existing.loginCount || 1) + 1; }
+        else { log.log.push({ hashedSub, firstLogin: now, lastLogin: now, loginCount: 1 }); }
+        await ghWrite('loginLog.json', log, result ? result.sha : null, 'Login geloggt');
+      } else {
+        const log = localRead(LOGIN_LOG_FILE) || { log: [] };
+        const existing = log.log.find(e => e.hashedSub === hashedSub);
+        if (existing) { existing.lastLogin = now; existing.loginCount = (existing.loginCount || 1) + 1; }
+        else { log.log.push({ hashedSub, firstLogin: now, lastLogin: now, loginCount: 1 }); }
+        localWrite(LOGIN_LOG_FILE, log);
+      }
+    } catch(e) { console.error('Login-Log Fehler:', e.message); }
+  }
 
   // Autorisierung pruefen
   let authorized = false;

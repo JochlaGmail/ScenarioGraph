@@ -1,9 +1,10 @@
 {
   "useGitHub": false,
   "requireAuth": false,
+  "enableLoginLog": true,
   "gitHubUser": "JochlaGmail",
   "gitHubRepo": "ScenarioGraph",
   "gitHubBranch": "main",
-  "defaultGraph": "Abenteuer",
+  "defaultGraph": "",
   "port": 3000
 }
